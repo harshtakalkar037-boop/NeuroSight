@@ -1,25 +1,42 @@
-PUT YOUR TRAINED TFLITE MODEL HERE
-==================================
+TFLITE MODEL FOR NEUROSIGHT
+===========================
 
-Place your TensorFlow Lite model as:
+The app loads the model from this exact path:
 
     app/src/main/assets/neurosight_encoder.tflite
 
-(There is currently NO model in this repository, which is why the app
-opens fine but the "Demo Mode" overlay shows:
+A model is ALREADY committed at that path (see below). If you remove or
+replace it, the app still builds and opens, but classification shows
+"Backend: not loaded (add neurosight_encoder.tflite to assets/)" because
+MainActivity catches the missing-asset error gracefully.
 
-    Backend: not loaded (add neurosight_encoder.tflite to assets/)
 
-The APK still builds and installs without a model; classification is simply
-inactive until you add this file and rebuild.)
+WHAT IS COMMITTED RIGHT NOW
+---------------------------
+A compact 3-class CNN trained from scratch on ~55 web images (walls,
+doors, people). It is INT8-quantized (UINT8 in, UINT8 out) so it matches
+NeuroSightClassifier.kt exactly (MODEL_IS_INT8_QUANTIZED = true).
+
+IMPORTANT — READ THIS
+---------------------
+This is a lightweight DEMO model, NOT a "100% accurate" production model.
+It was trained on a small, web-scraped dataset from scratch (no pre-trained
+ImageNet backbone was downloadable in the build environment), so it will
+make mistakes on real camera frames, lighting, and angles that differ from
+its training images. It is enough to run the FULL pipeline (camera →
+class → haptics → audio) and get a feel for the demo, but for an accurate
+live demo you should train on frames captured with YOUR iQOO phone's camera.
+
+See docs/MODEL_TRAINING.md at the repo root for the exact training script
+and steps to replace this file with a properly trained model.
 
 
 EXACT MODEL CONTRACT (must match NeuroSightClassifier.kt)
 --------------------------------------------------------
 Input:
-    - 1x224x224x3 RGB image (float pixels 0-255 -> UINT8 when quantized)
-    - Model is treated as INT8-quantized (MODEL_IS_INT8_QUANTIZED = true),
-      so the input tensor is UINT8 and NO pixel normalization is applied.
+    - 1x224x224x3 RGB image (raw 0-255 pixels as UINT8).
+    - Model is INT8-quantized; the tensor input type is UINT8 and NO pixel
+      normalization is applied (the model normalizes internally).
     - The classifier resizes/crops any incoming frame to 224x224 internally.
 
 Output:
@@ -27,19 +44,10 @@ Output:
           index 0 -> "wall"
           index 1 -> "door"
           index 2 -> "person"
-
-    If your model outputs logits rather than probabilities, the classifier
-    applies softmax and takes the max; if it outputs probabilities directly
-    (or is quantized), the raw scores are read and the max index is used.
-
-
-HOW TO BUILD A WORKING APK
---------------------------
-1. Drop the .tflite file at the path above (git add it).
-2. Commit and push; the "Build APK" workflow runs automatically, or trigger
-   it manually from the Actions tab (Run workflow).
-3. Download the "neurosight-debug-apk" artifact and install it.
+    - The classifier takes the max index as the predicted class and reads the
+      dequantized score as confidence.
 
 To switch to a FLOAT32 (non-quantized) model, set
 MODEL_IS_INT8_QUANTIZED = false in
-app/src/main/java/com/neurosight/app/ml/NeuroSightClassifier.kt.
+app/src/main/java/com/neurosight/app/ml/NeuroSightClassifier.kt
+(you would then supply a float model and re-export).
