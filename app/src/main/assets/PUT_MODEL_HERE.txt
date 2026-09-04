@@ -13,22 +13,20 @@ MainActivity catches the missing-asset error gracefully.
 
 WHAT IS COMMITTED RIGHT NOW
 ---------------------------
-A compact 3-class CNN trained from scratch on ~55 web images (walls,
-doors, people). It is INT8-quantized (UINT8 in, UINT8 out) so it matches
-NeuroSightClassifier.kt exactly (MODEL_IS_INT8_QUANTIZED = true).
+A trained 3-class CNN (wall, door, person) built in `training/`. It is
+INT8-quantized (UINT8 in, UINT8 out) so it matches NeuroSightClassifier.kt
+exactly (MODEL_IS_INT8_QUANTIZED = true). Measured on the training set:
+~0.82 validation, ~0.91 full-dataset.
 
 IMPORTANT — READ THIS
 ---------------------
-This is a lightweight DEMO model, NOT a "100% accurate" production model.
-It was trained on a small, web-scraped dataset from scratch (no pre-trained
-ImageNet backbone was downloadable in the build environment), so it will
-make mistakes on real camera frames, lighting, and angles that differ from
-its training images. It is enough to run the FULL pipeline (camera →
-class → haptics → audio) and get a feel for the demo, but for an accurate
-live demo you should train on frames captured with YOUR iQOO phone's camera.
-
-See docs/MODEL_TRAINING.md at the repo root for the exact training script
-and steps to replace this file with a properly trained model.
+This is a DEMO model, NOT a "100% accurate" production model. It was
+trained from scratch on a small dataset (the ImageNet weights host was
+unreachable in the build environment), so it will make mistakes on real
+camera frames, lighting, and angles that differ from its training images.
+For an accurate live demo, train on frames captured with YOUR iQOO phone's
+camera using `training/train_neurosight.py` + a pre-trained ImageNet
+backbone. See docs/MODEL_TRAINING.md for full details and steps.
 
 
 EXACT MODEL CONTRACT (must match NeuroSightClassifier.kt)

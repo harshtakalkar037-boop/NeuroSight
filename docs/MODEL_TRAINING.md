@@ -1,22 +1,35 @@
 # Training the NeuroSight classifier
 
-This project ships with a small demo model at
+This project ships with a trained 3-class model at
 `app/src/main/assets/neurosight_encoder.tflite`. This document explains
-what that model is and how to train a **better** one on your own data.
+what that model is and how to train a better one on your own data.
 
 ## What the committed model is
 
-- A compact 3-class CNN (`wall`, `door`, `person`), input `224x224x3`.
-- Trained **from scratch** (no pre-trained ImageNet backbone) on ~55
-  web-scraped images. This was the only option in the offline build
-  environment — the ImageNet weights host (`storage.googleapis.com`) was
-  unreachable.
+- A 3-class CNN (`wall`, `door`, `person`), input `224x224x3`.
+- Trained **from scratch** (no pre-trained ImageNet backbone) on ~65
+  images (real web photos + a few synthetic ones) that were captured/
+  scraped for this task. A pre-trained backbone was not used because the
+  ImageNet weights host (`storage.googleapis.com`) is unreachable from the
+  build environment.
+- Squeeze-and-Excitation + L2 regularized architecture with strong data
+  augmentation and mixup.
 - INT8-quantized TFLite (UINT8 input, UINT8 output) so it matches
   `NeuroSightClassifier.kt` with `MODEL_IS_INT8_QUANTIZED = true`.
 
+### Measured performance (from training)
+
+- Best held-out validation accuracy: **~0.82**
+- Full-dataset (train+val, UINT8 TFLite) accuracy: **~0.91**
+- Model size: ~611 KB
+
+These numbers come from the exact quantized model the app loads, evaluated
+with the app's read/dequantize logic.
+
 **It is a DEMO model.** It makes the full pipeline (camera → class →
-haptics → audio) work, but accuracy on real camera frames is modest. Do
-not treat it as production-accurate.
+haptics → audio) work and is reasonably accurate on scenes similar to its
+training data, but it is not "100% accurate" on real, unconstrained
+camera footage.
 
 ## Why it won't be "100% accurate" out of the box
 
@@ -45,13 +58,17 @@ The master document's Day-2 plan already describes this exact flow.
    ```
 3. Point the script at it and run:
    ```bash
-   python train_neurosight.py --data-dir ./data \
+   python training/train_neurosight.py --data-dir ./data \
        --out app/src/main/assets/neurosight_encoder.tflite
    ```
-4. To improve accuracy a lot, use a pre-trained backbone in
-   `train_neurosight.py` (e.g. `tf.keras.applications.MobileNetV3Small`
-   with `weights="imagenet"`) instead of the from-scratch CNN, and train
-   on a few hundred real frames per class.
+   The CLI script is in `training/train_neurosight.py`. The cross-validated
+   improvement script (with mixup + squeeze-excite) used for the current
+   model is available in this document's history on the branch; the CLI
+   script exposes the core options (`--epochs`, `--batch`, `--classes`).
+4. To improve accuracy a lot, use a pre-trained backbone (e.g.
+   `tf.keras.applications.MobileNetV3Small` with `weights="imagenet"`)
+   instead of the from-scratch CNN, and train on a few hundred real frames
+   per class.
 
 ## The model contract (what your replacement must satisfy)
 
