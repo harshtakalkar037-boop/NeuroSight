@@ -1,0 +1,73 @@
+name: Build APK
+
+# Runs on every push/PR, and can also be triggered manually from the
+# "Actions" tab in GitHub (Run workflow button) via workflow_dispatch.
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Warn if model asset is missing
+        run: |
+          if [ ! -f "app/src/main/assets/neurosight_encoder.tflite" ]; then
+            echo "::warning::app/src/main/assets/neurosight_encoder.tflite is missing." \
+                 "The APK will still build, but on-device classification will not run" \
+                 "until you add the real model file and re-run this workflow."
+          fi
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neurosight-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      # ---------------------------------------------------------------
+      # OPTIONAL: build a signed release APK.
+      # Uncomment and configure repo secrets (KEYSTORE_BASE64,
+      # KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) if you want a
+      # release build instead of / in addition to the debug one.
+      # ---------------------------------------------------------------
+      # - name: Decode keystore
+      #   run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+      #
+      # - name: Build release APK
+      #   run: |
+      #     ./gradlew assembleRelease --stacktrace \
+      #       -Pandroid.injected.signing.store.file=release.keystore \
+      #       -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+      #       -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+      #       -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+      #
+      # - name: Upload release APK artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: neurosight-release-apk
+      #     path: app/build/outputs/apk/release/app-release.apk

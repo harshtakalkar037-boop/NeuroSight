@@ -1,0 +1,51 @@
+TFLITE MODEL FOR NEUROSIGHT
+===========================
+
+The app loads the model from this exact path:
+
+    app/src/main/assets/neurosight_encoder.tflite
+
+A model is ALREADY committed at that path (see below). If you remove or
+replace it, the app still builds and opens, but classification shows
+"Backend: not loaded (add neurosight_encoder.tflite to assets/)" because
+MainActivity catches the missing-asset error gracefully.
+
+
+WHAT IS COMMITTED RIGHT NOW
+---------------------------
+A trained 3-class CNN (wall, door, person) built in `training/`. It is
+INT8-quantized (UINT8 in, UINT8 out) so it matches NeuroSightClassifier.kt
+exactly (MODEL_IS_INT8_QUANTIZED = true). Measured on the training set:
+~0.82 validation, ~0.91 full-dataset.
+
+IMPORTANT — READ THIS
+---------------------
+This is a DEMO model, NOT a "100% accurate" production model. It was
+trained from scratch on a small dataset (the ImageNet weights host was
+unreachable in the build environment), so it will make mistakes on real
+camera frames, lighting, and angles that differ from its training images.
+For an accurate live demo, train on frames captured with YOUR iQOO phone's
+camera using `training/train_neurosight.py` + a pre-trained ImageNet
+backbone. See docs/MODEL_TRAINING.md for full details and steps.
+
+
+EXACT MODEL CONTRACT (must match NeuroSightClassifier.kt)
+--------------------------------------------------------
+Input:
+    - 1x224x224x3 RGB image (raw 0-255 pixels as UINT8).
+    - Model is INT8-quantized; the tensor input type is UINT8 and NO pixel
+      normalization is applied (the model normalizes internally).
+    - The classifier resizes/crops any incoming frame to 224x224 internally.
+
+Output:
+    - 1x3 scores, one per class, in this EXACT order:
+          index 0 -> "wall"
+          index 1 -> "door"
+          index 2 -> "person"
+    - The classifier takes the max index as the predicted class and reads the
+      dequantized score as confidence.
+
+To switch to a FLOAT32 (non-quantized) model, set
+MODEL_IS_INT8_QUANTIZED = false in
+app/src/main/java/com/neurosight/app/ml/NeuroSightClassifier.kt
+(you would then supply a float model and re-export).
