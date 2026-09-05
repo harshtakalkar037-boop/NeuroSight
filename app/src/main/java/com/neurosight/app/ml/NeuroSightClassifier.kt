@@ -110,8 +110,13 @@ class NeuroSightClassifier(private val context: Context) {
         try {
             val compatList = CompatibilityList()
             if (compatList.isDelegateSupportedOnThisDevice) {
-                val delegateOptions = compatList.bestOptionsForThisDevice
-                val delegate = GpuDelegate(delegateOptions)
+                // NOTE: We intentionally use GpuDelegate() with default options
+                // instead of CompatibilityList.bestOptionsForThisDevice /
+                // GpuDelegate.Options. With the tflite:2.16.1 + tflite-gpu:2.16.1
+                // combination on the classpath, GpuDelegate.Options' supertype
+                // (GpuDelegateFactory.Options) cannot be resolved, which fails
+                // compilation. Default options are plenty for this demo.
+                val delegate = GpuDelegate()
                 val options = Interpreter.Options().addDelegate(delegate)
                 interpreter = Interpreter(modelBuffer, options)
                 gpuDelegate = delegate
