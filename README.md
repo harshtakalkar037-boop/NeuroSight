@@ -12,8 +12,6 @@
 
 <br>
 
-**📱 Phone-First** &nbsp; **🧠 On-Device** &nbsp; **⚡ Snapdragon / NPU Ready** &nbsp; **🔒 Offline-First**
-
 </div>
 
 ---
@@ -592,22 +590,6 @@ Explore haptic wristbands, multi-point vibration, and wireless audio integration
 ### 05 · Real-World Evaluation
 
 Larger-scale testing, accessibility collaboration, usability studies, and safety evaluation.
-
----
-
-# ⚠️ Limitations & Safety
-
-NeuroSight is currently a **hackathon prototype**.
-
-- Five object classes are currently supported.
-- The training dataset is development-scale.
-- Performance can vary in unseen environments.
-- Lighting, distance, and camera angle can affect predictions.
-- Similar-looking objects may be misclassified.
-- P95 latency has not yet been measured.
-- Extensive real-world accessibility testing has not yet been completed.
-
-> **NeuroSight should not currently replace white canes, guide dogs, human assistance, established mobility aids, or professional accessibility systems.**
 
 ---
 
