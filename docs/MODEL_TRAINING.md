@@ -1,86 +1,93 @@
-# Training the NeuroSight classifier
+# Training the NeuroSight v2 classifier
 
-This project ships with a trained 3-class model at
-`app/src/main/assets/neurosight_encoder.tflite`. This document explains
-what that model is and how to train a better one on your own data.
+NeuroSight v2 uses a **5-class** visual classifier:
 
-## What the committed model is
+- `door`
+- `window`
+- `chair`
+- `table`
+- `cabinet`
 
-- A 3-class CNN (`wall`, `door`, `person`), input `224x224x3`.
-- Trained **from scratch** (no pre-trained ImageNet backbone) on ~65
-  images (real web photos + a few synthetic ones) that were captured/
-  scraped for this task. A pre-trained backbone was not used because the
-  ImageNet weights host (`storage.googleapis.com`) is unreachable from the
-  build environment.
-- Squeeze-and-Excitation + L2 regularized architecture with strong data
-  augmentation and mixup.
-- INT8-quantized TFLite (UINT8 input, UINT8 output) so it matches
-  `NeuroSightClassifier.kt` with `MODEL_IS_INT8_QUANTIZED = true`.
+The Android model contract is `1x224x224x3 UINT8 -> 1x5 UINT8` in the exact
+label order above.
 
-### Measured performance (from training)
+## Dataset used for v2
 
-- Best held-out validation accuracy: **~0.82**
-- Full-dataset (train+val, UINT8 TFLite) accuracy: **~0.91**
-- Model size: ~611 KB
+The current training pipeline accepts the Kaggle **Indoor Object Detection**
+YOLO dataset. Its source labels include `door`, `cabinetDoor`,
+`refrigeratorDoor`, `window`, `chair`, `table`, `cabinet`, `couch`,
+`openedDoor`, and `pole`.
 
-These numbers come from the exact quantized model the app loads, evaluated
-with the app's read/dequantize logic.
+For NeuroSight v2, the four door-related source labels are merged into the
+single `door` class. The five selected output classes are therefore:
 
-**It is a DEMO model.** It makes the full pipeline (camera → class →
-haptics → audio) work and is reasonably accurate on scenes similar to its
-training data, but it is not "100% accurate" on real, unconstrained
-camera footage.
+```text
+door <- door + cabinetDoor + refrigeratorDoor + openedDoor
+window
+chair
+table
+cabinet
+```
 
-## Why it won't be "100% accurate" out of the box
+The training script crops annotated bounding boxes into object images before
+classification. Train/validation/test remain separated according to the
+source dataset splits, and per-class crop limits are used to reduce the large
+class imbalance in the source labels.
 
-Real-world accuracy requires:
-1. Training on frames captured with *your* phone's camera (same lens,
-   lighting, Indian indoor/crowded scenes, 224x224 crops).
-2. A pre-trained backbone (MobileNetV3-Small / V2 with ImageNet weights)
-   + fine-tuning, which transfers knowledge from millions of images.
+## Train and export
 
-The master document's Day-2 plan already describes this exact flow.
+Install dependencies:
 
-## Reproducing training (Linux / Mac)
+```bash
+python3 -m venv venv
+. venv/bin/activate
+pip install tensorflow numpy pillow pyyaml
+```
 
-1. Install dependencies:
-   ```bash
-   python3 -m venv venv && . venv/bin/activate
-   pip install tensorflow-cpu numpy pillow
-   ```
-2. Create a dataset folder with one subfolder per class, each containing
-   `.jpg` images (224x224 is fine, any size works — the loader resizes):
-   ```
-   data/
-     wall/   .jpg ...
-     door/   .jpg ...
-     person/ .jpg ...
-   ```
-3. Point the script at it and run:
-   ```bash
-   python training/train_neurosight.py --data-dir ./data \
-       --out app/src/main/assets/neurosight_encoder.tflite
-   ```
-   The CLI script is in `training/train_neurosight.py`. The cross-validated
-   improvement script (with mixup + squeeze-excite) used for the current
-   model is available in this document's history on the branch; the CLI
-   script exposes the core options (`--epochs`, `--batch`, `--classes`).
-4. To improve accuracy a lot, use a pre-trained backbone (e.g.
-   `tf.keras.applications.MobileNetV3Small` with `weights="imagenet"`)
-   instead of the from-scratch CNN, and train on a few hundred real frames
-   per class.
+Then run:
 
-## The model contract (what your replacement must satisfy)
+```bash
+python training/train_neurosight.py \
+  --yolo-dir /path/to/kagglehub/datasets/thepbordin/indoor-object-detection/versions/1 \
+  --out app/src/main/assets/neurosight_encoder.tflite
+```
 
-| Field | Value |
+The script:
+
+1. Reads YOLO bounding-box annotations.
+2. Crops the five selected object classes.
+3. Uses MobileNetV3-Small with ImageNet transfer learning when the pretrained
+   weights are available.
+4. Fine-tunes with a low learning rate.
+5. Evaluates the held-out test split.
+6. Converts the model to full-integer TFLite with a representative dataset.
+7. Verifies the resulting TFLite input/output tensors.
+8. Writes `neurosight_labels.txt` beside the model.
+
+TensorFlow's documented full-integer conversion requires a representative
+dataset for activation calibration and supports explicit UINT8 input/output.
+See the official TensorFlow quantization documentation for details.
+
+## Model contract
+
+| Field | v2 value |
 |---|---|
-| Place | `app/src/main/assets/neurosight_encoder.tflite` |
-| Input | `1x224x224x3`, **UINT8** (raw 0-255), quantized |
-| Output | `1x3` scores, order `wall, door, person` |
-| Quantization | INT8 full-integer (input & output UINT8) |
+| Model | `app/src/main/assets/neurosight_encoder.tflite` |
+| Input | `1x224x224x3`, **UINT8**, raw 0-255 |
+| Output | `1x5`, **UINT8** |
+| Label order | `door, window, chair, table, cabinet` |
+| Quantization | Full integer, UINT8 input/output |
 
-The app's `NeuroSightClassifier` feeds raw 0-255 UINT8 pixels and reads
-dequantized scores. A model built with the standard TensorFlow full-integer
-conversion (input/output type `uint8`, representative dataset in `[0,255]`)
-matches this automatically. If you switch to a float model, set
-`MODEL_IS_INT8_QUANTIZED = false` in `NeuroSightClassifier.kt`.
+`NeuroSightClassifier.kt` must use the same label order. Do not change the
+order in only one place.
+
+## Important limitation
+
+This v2 dataset does **not contain a person or wall class**. Therefore the
+5-class v2 model should not be described as a wall/person detector. A future
+v3 model can add those classes after collecting or licensing suitable data.
+
+Also, the dataset is an object-detection source dataset and the v2 classifier
+is trained on annotated object crops. Live camera accuracy can differ from
+crop-level test accuracy because a phone camera frame contains background,
+scale, occlusion, blur, and multiple objects.
