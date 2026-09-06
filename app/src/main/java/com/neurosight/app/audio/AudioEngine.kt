@@ -11,25 +11,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 
-/**
- * Generates and plays distinct audio cues per class.
- *
- * ---- WHY AudioTrack INSTEAD OF SoundPool ----
- * The spec calls for SoundPool or AudioTrack, "whichever is more appropriate."
- * SoundPool plays pre-recorded short clips loaded from res/raw or assets --
- * that would require bundling actual audio files for three continuous tones.
- * AudioTrack lets us synthesize the sine-wave tones directly in code with no
- * bundled audio assets at all, which keeps the app fully self-contained for
- * the hackathon. If you'd rather ship WAV/MP3 assets and use SoundPool
- * instead, swap this class's internals but keep the same
- * startForClass()/stop() interface so the rest of the app doesn't change.
- *
- * ---- HOW TO ADJUST TONES ----
- * Edit [ToneSpec] values in [specFor]:
- *   - frequencyHz: pitch of the tone.
- *   - pulseOnMs / pulseOffMs: for pulsed tones, on/off duration in ms.
- *     Set pulseOffMs = 0 for a continuous (non-pulsed) tone.
- */
+/** Generates distinct accessibility audio cues for each detected class. */
 class AudioEngine {
 
     private data class ToneSpec(
@@ -43,17 +25,14 @@ class AudioEngine {
     private var playJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    /** Starts (or continues) the tone for [className]. No-op if already playing that class's tone. */
     fun startForClass(className: String) {
         if (className == currentClass) return
         stopInternal()
         currentClass = className
-
         val spec = specFor(className) ?: return
         playJob = scope.launch { playLoop(spec) }
     }
 
-    /** Stops any currently playing tone. */
     fun stop() {
         currentClass = null
         stopInternal()
@@ -64,20 +43,16 @@ class AudioEngine {
         playJob = null
     }
 
-    /**
-     * Tone definitions per class:
-     *   - "wall":   ~200 Hz, continuous (no pulsing) -- a steady low drone.
-     *   - "door":   ~400 Hz, pulsed on/off every 300ms -- a mid-pitch rhythm.
-     *   - "person": ~600 Hz, pulsed on/off every 120ms -- a fast, urgent chirp.
-     */
+    /** Five classes intentionally use separated pitch/rhythm signatures. */
     private fun specFor(className: String): ToneSpec? = when (className) {
-        "wall" -> ToneSpec(frequencyHz = 200.0, pulseOnMs = 1000, pulseOffMs = 0)
-        "door" -> ToneSpec(frequencyHz = 400.0, pulseOnMs = 300, pulseOffMs = 300)
-        "person" -> ToneSpec(frequencyHz = 600.0, pulseOnMs = 120, pulseOffMs = 120)
+        "door" -> ToneSpec(400.0, 300, 300)
+        "window" -> ToneSpec(520.0, 180, 180)
+        "chair" -> ToneSpec(300.0, 220, 420)
+        "table" -> ToneSpec(650.0, 120, 480)
+        "cabinet" -> ToneSpec(250.0, 500, 250)
         else -> null
     }
 
-    /** Continuously (re-)plays short generated tone buffers until the coroutine is cancelled. */
     private suspend fun playLoop(spec: ToneSpec) {
         val toneBuffer = generateSineWave(spec.frequencyHz, spec.pulseOnMs)
         val track = buildAudioTrack(toneBuffer.size)
@@ -88,15 +63,11 @@ class AudioEngine {
                 if (spec.pulseOffMs > 0) {
                     track.stop()
                     kotlinx.coroutines.delay(spec.pulseOffMs)
-                    track.play() // STREAM mode: play() alone resumes playback, no reload needed.
+                    track.play()
                 }
             }
         } finally {
-            try {
-                track.stop()
-            } catch (_: IllegalStateException) {
-                // Track may already be stopped/released; safe to ignore during teardown.
-            }
+            try { track.stop() } catch (_: IllegalStateException) { }
             track.release()
         }
     }
@@ -107,8 +78,6 @@ class AudioEngine {
             AudioFormat.CHANNEL_OUT_MONO,
             AudioFormat.ENCODING_PCM_16BIT
         )
-        val bufferBytes = maxOf(minBufferSize, bufferSizeInFrames * 2)
-
         return AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -123,26 +92,23 @@ class AudioEngine {
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                     .build()
             )
-            .setBufferSizeInBytes(bufferBytes)
+            .setBufferSizeInBytes(maxOf(minBufferSize, bufferSizeInFrames * 2))
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
     }
 
-    /** Generates a 16-bit PCM sine wave buffer of [durationMs] at [frequencyHz]. */
     private fun generateSineWave(frequencyHz: Double, durationMs: Long): ShortArray {
         val sampleCount = (sampleRate * (durationMs / 1000.0)).toInt().coerceAtLeast(1)
         val buffer = ShortArray(sampleCount)
         val angularStep = 2.0 * Math.PI * frequencyHz / sampleRate
+        val fadeSamples = (sampleRate * 0.01).toInt().coerceAtLeast(1)
         for (i in 0 until sampleCount) {
-            // Simple amplitude envelope fade in/out to avoid audible clicks at buffer edges.
-            val fadeSamples = (sampleRate * 0.01).toInt().coerceAtLeast(1) // 10ms fade
             val envelope = when {
                 i < fadeSamples -> i.toDouble() / fadeSamples
                 i > sampleCount - fadeSamples -> (sampleCount - i).toDouble() / fadeSamples
                 else -> 1.0
             }
-            val sampleValue = (sin(angularStep * i) * envelope * Short.MAX_VALUE * 0.6).toInt()
-            buffer[i] = sampleValue.toShort()
+            buffer[i] = (sin(angularStep * i) * envelope * Short.MAX_VALUE * 0.6).toInt().toShort()
         }
         return buffer
     }
