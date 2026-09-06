@@ -1,382 +1,481 @@
+<div align="center">
+
 # 🧠 NeuroSight
 
-### A phone that sees the world and communicates it through sound + touch
+### See the World Differently. Feel What Matters.
 
-**iQOO Hackathon · City Battles 2026 · Pune/Chennai**
+**A phone-first assistive vision system that converts visual surroundings into haptic and audio feedback using on-device AI.**
 
-> NeuroSight is a phone-first assistive vision system that uses the smartphone camera and on-device AI to recognize surrounding objects and convert visual information into distinct audio and haptic cues.
+**iQOO Hackathon 2026 · City Battles · Chennai**
 
----
+`Phone-First` · `On-Device AI` · `Edge AI` · `Accessibility`
 
-## 🚀 Overview
+<br>
 
-NeuroSight explores how a smartphone can become an **assistive sensory interface** for people who cannot reliably depend on vision.
+**📱 Phone-First** &nbsp; **🧠 On-Device** &nbsp; **⚡ Snapdragon / NPU Ready** &nbsp; **🔒 Offline-First**
 
-The system continuously analyzes the camera feed using an **on-device TensorFlow Lite model** and recognizes common indoor objects.
-
-Instead of presenting only a visual label, NeuroSight communicates the detected object through:
-
-- 🔊 **Distinct audio cues**
-- 📳 **Distinct vibration patterns**
-- 📱 **Real-time Android feedback**
-- ⚡ **Hardware-accelerated inference where supported**
-- 🔒 **Offline-first processing**
-
-The goal is simple:
-
-> **Camera → AI → Object → Sound + Touch**
+</div>
 
 ---
 
-## 🎯 Problem
+## 🚀 What is NeuroSight?
 
-A smartphone camera can capture a huge amount of visual information, but that information is normally presented back to the user visually.
+**NeuroSight** is an Android prototype that uses the smartphone camera to recognize basic surroundings and communicate the result through **distinct vibration and audio patterns**.
 
-For a visually impaired or low-vision user, simply saying:
+Instead of sending camera data to a cloud service or relying only on a visual screen, NeuroSight explores a simple sensory-substitution pipeline:
 
-> "Chair detected"
+> **Camera → On-Device AI → Haptics + Audio**
 
-is not always enough.
+The current prototype recognizes:
 
-NeuroSight investigates a different interaction model:
+- 🚪 **Door**
+- 🪟 **Window**
+- 🪑 **Chair**
+- 🟫 **Table**
+- 🗄️ **Cabinet**
 
-> **What if the phone could translate visual information into a sensory language using touch and sound?**
+The smartphone acts as the sensing, computing, and feedback device.
 
-Different objects therefore produce different combinations of:
-
-- vibration rhythm
-- vibration duration
-- vibration intensity
-- audio frequency
-- audio rhythm
-
-This allows the user to learn and distinguish objects without depending entirely on a screen.
+<div align="center">
+<img src="assets/neurosight-system-overview.png" alt="NeuroSight system overview" width="900">
+</div>
 
 ---
 
-## 💡 Core Idea
+## 🎯 The Problem
 
-NeuroSight creates a lightweight sensory-substitution pipeline:
+For blind and low-vision users, understanding nearby surroundings can be difficult, especially in unfamiliar indoor environments.
+
+Many assistive approaches can involve continuous voice descriptions, internet connectivity, cloud processing, or additional hardware.
+
+### NeuroSight asks:
+
+> **Can the smartphone already in a user's hand become a real-time sensory bridge to the surrounding environment?**
+
+The prototype focuses on three building blocks:
+
+**Visual input → Local intelligence → Non-visual feedback**
+
+---
+
+## 💡 The Core Idea
 
 ```text
-                📷 Smartphone Camera
+                    REAL WORLD
                          │
                          ▼
-                    CameraX
+                    📷 CAMERA
                          │
                          ▼
-              Image Preprocessing
-                 224 × 224 RGB
+                IMAGE PROCESSING
                          │
                          ▼
-              MobileNetV3-Small
+                 🧠 ON-DEVICE AI
                          │
+            ┌────────────┼────────────┐
+            ▼            ▼            ▼
+          DOOR        WINDOW        CHAIR
+            │            │            │
+            ├──────── TABLE ──────────┤
+            │         CABINET         │
+            └────────────┬────────────┘
+                         │
+                  ┌──────┴──────┐
+                  ▼             ▼
+              📳 HAPTICS     🔊 AUDIO
+                  │             │
+                  └──────┬──────┘
                          ▼
-             TensorFlow Lite Model
-                         │
-                 UINT8 Output
-                         │
-                         ▼
-                  1 × 5 Classes
-                         │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-        📳 HapticEngine        🔊 AudioEngine
-              │                     │
-              └──────────┬──────────┘
-                         ▼
-                Sensory Feedback
-🏗️ System Architecture
+                       USER
+```
 
-Processing Pipeline
-CameraX captures frames from the smartphone camera.
-Frames are resized and converted into the model's expected input format.
-The image is processed at 224 × 224 RGB resolution.
-MobileNetV3-Small performs lightweight image classification.
-TensorFlow Lite executes the model on the Android device.
-The model produces a 1 × 5 UINT8 output.
-The highest-scoring class is selected.
-HapticEngine generates the object's vibration pattern.
-AudioEngine generates the object's audio pattern.
-The user receives the result through touch + sound.
-🤖 On-Device AI
+---
 
-NeuroSight is designed around edge inference rather than sending camera frames to a remote server.
+# 📱 Phone-First Architecture
 
-Model
-Property	NeuroSight
-Architecture	MobileNetV3-Small
-Framework	TensorFlow Lite
-Input	224 × 224 × 3 RGB
-Input Type	UINT8
-Output	1 × 5
-Output Type	UINT8
-Quantization	Full-integer 8-bit
-Classes	5
-Model Size	~1.22 MB
-Execution	Android device
-Acceleration	Hardware-accelerated backend where supported
-CPU fallback	Supported
-Classes
+NeuroSight is designed around the **smartphone as the primary product**.
 
-The current model recognizes:
+| Phone Capability | Role in NeuroSight |
+|---|---|
+| 📷 Camera | Captures the surrounding scene |
+| 🧠 Mobile Compute | Runs image processing and inference |
+| ⚡ Snapdragon / NPU | Target for efficient mobile AI acceleration where supported |
+| 📳 Vibration Motor | Communicates class-specific patterns |
+| 🔊 Speaker | Provides audio feedback |
+| 📱 Android | Integrates the complete experience |
 
-🚪 Door
-🪟 Window
-🪑 Chair
-🟫 Table
-🗄️ Cabinet
-📊 Model Results
+The core workflow is designed to run locally rather than requiring a separate computer-vision device.
 
-The model was trained and evaluated during development using the NeuroSight training pipeline.
+---
 
-Accuracy Results
-Best validation accuracy: 99.59%
-Validation accuracy: 98.63%
+# 🧠 On-Device AI
 
-These numbers represent model accuracy, not the confidence score of an individual prediction.
+The classification pipeline uses **MobileNetV3-Small + TensorFlow Lite** and is designed for local smartphone inference.
 
-Important Note
+### Key points
 
-These results were obtained on the development dataset and should not be interpreted as production-world accuracy.
+- **On-device inference**
+- **TensorFlow Lite deployment**
+- **Full-integer UINT8 quantized model**
+- **224 × 224 × 3 RGB input**
+- **~1.22 MB model**
+- **5-class classification**
+- **Snapdragon / Hexagon NPU acceleration where supported by the device and runtime**
+- **No mandatory cloud inference**
 
-Real-world performance can vary with:
+### Inference Pipeline
 
-lighting
-object distance
-camera angle
-occlusion
-object appearance
-background complexity
-device camera characteristics
-📱 Real Device Performance
+```text
+Camera Frame
+     ↓
+Image Processing
+     ↓
+224 × 224 RGB
+     ↓
+MobileNetV3-Small
+     ↓
+TensorFlow Lite
+     ↓
+Door / Window / Chair / Table / Cabinet
+     ↓
+Haptics + Audio
+```
 
-NeuroSight was tested end-to-end on an iQOO smartphone.
+---
 
-Observed development measurements:
+# ⚡ Why Edge / NPU?
 
-Metric	Observed
-Average inference latency	~40–50 ms
-Median latency	~50 ms
-Throughput	~30 FPS
-P95 latency	Not measured
+The model is intentionally lightweight and quantized for mobile deployment.
 
-The application was tested as a complete pipeline rather than only testing the model independently.
+The architecture is suitable for **edge AI execution** and is designed to take advantage of **Snapdragon / Hexagon NPU acceleration where supported by the device and runtime**.
 
-This includes:
+This keeps the intelligence close to the sensor:
 
-Camera → preprocessing → TensorFlow Lite inference → classification → audio/haptic feedback
+**Camera → Mobile AI → Feedback**
 
-⚡ Edge / Hardware Acceleration
+rather than:
 
-NeuroSight is designed to take advantage of Android's hardware acceleration capabilities where available.
+**Camera → Cloud → Server → Phone**
 
-The application uses a TensorFlow Lite inference path that can leverage supported device acceleration, with CPU execution available as a fallback.
+### Benefits
 
-The architecture is therefore suitable for modern smartphone SoCs containing dedicated AI acceleration hardware.
+- ⚡ Efficient mobile inference
+- 🔒 Local camera processing
+- 📡 Reduced dependence on connectivity
+- 📱 No separate AI computer required for the core prototype
 
-Exact accelerator routing can vary by device, Android version, TensorFlow Lite runtime, and delegate availability.
+---
 
-This keeps the system focused on the phone itself as the AI platform rather than requiring a cloud backend.
+# 🔒 Offline-First
 
-📊 Dataset
+The core classification pipeline is designed to work locally on the smartphone.
 
-The model training pipeline uses an indoor-object detection dataset containing multiple object categories.
+```text
+📷 Camera
+   ↓
+Local Image Processing
+   ↓
+On-Device TFLite Model
+   ↓
+Prediction
+   ↓
+📳 Haptics + 🔊 Audio
+```
 
-The original object-detection labels were consolidated into the five NeuroSight classes:
+### Core pipeline does not require
 
-door
-cabinetDoor
-refrigeratorDoor
-openedDoor
-        ↓
-      Door
+- ❌ Cloud inference
+- ❌ Camera-image upload
+- ❌ Backend server
+- ❌ Mandatory internet connection
+
+### Why this matters
+
+**Privacy** — camera data can remain on the device.
+
+**Availability** — the core inference path does not depend on network access.
+
+**Portability** — the complete prototype is centered around one smartphone.
+
+---
+
+# 🏗️ Technical Architecture
+
+<div align="center">
+<img src="assets/neurosight-architecture.png" alt="NeuroSight technical architecture" width="900">
+</div>
+
+### Processing flow
+
+1. **CameraX** captures camera frames.
+2. The frame is prepared for inference.
+3. The image is resized to **224 × 224 RGB**.
+4. **MobileNetV3-Small** performs lightweight image classification.
+5. TensorFlow Lite performs local inference using the **UINT8** model.
+6. The predicted class is passed to the feedback layer.
+7. **HapticEngine** generates the corresponding vibration pattern.
+8. **AudioEngine** provides the corresponding audio feedback.
+
+---
+
+# 🤖 AI Model
+
+The trained model is bundled directly with the Android application:
+
+```text
+app/src/main/assets/neurosight_encoder.tflite
+```
+
+Class labels are stored in:
+
+```text
+app/src/main/assets/neurosight_labels.txt
+```
+
+| Property | Value |
+|---|---|
+| Architecture | MobileNetV3-Small |
+| Framework | TensorFlow Lite |
+| Input | `224 × 224 × 3` |
+| Input Type | `UINT8` |
+| Output | `1 × 5` |
+| Output Type | `UINT8` |
+| Classes | Door / Window / Chair / Table / Cabinet |
+| Quantization | Full-integer 8-bit |
+| Model Size | ~1.22 MB |
+
+The model is packaged as a compact mobile inference asset for real-time smartphone experimentation.
+
+---
+
+# 📊 Development Results
+
+The current model was developed and evaluated as a **hackathon prototype** using the training pipeline and development dataset.
+
+<div align="center">
+<img src="assets/neurosight-accuracy.png" alt="NeuroSight accuracy results" width="750">
+</div>
+
+| Evaluation | Result |
+|---|---:|
+| Best validation accuracy | **99.59%** |
+| Validation accuracy | **98.63%** |
+
+> **These are model accuracy results, not individual prediction confidence scores.**
+
+These are development results, not production-level performance claims. Real-world performance can vary with lighting, camera angle, distance, environment, and unseen scenes.
+
+---
+
+# 📱 Real Device Performance
+
+The current application was tested end-to-end on an **iQOO smartphone**.
+
+| Metric | Observed |
+|---|---:|
+| Average inference latency | **~40–50 ms** |
+| Median latency | **~50 ms** |
+| Throughput | **~30 FPS** |
+| P95 latency | Not measured |
+
+The measurements reflect the working Android pipeline from camera processing through model inference and feedback.
+
+---
+
+# 📚 Dataset
+
+The training pipeline uses an indoor-object detection dataset and consolidates related door categories into a single **Door** class.
+
+```text
+Door
+├── door
+├── cabinetDoor
+├── refrigeratorDoor
+└── openedDoor
+```
 
 The final classification categories are:
 
+```text
 Door
 Window
 Chair
 Table
 Cabinet
+```
 
 The training pipeline converts object-detection annotations into classification crops before training the image classifier.
 
-Dataset Distribution
+<div align="center">
+<img src="assets/neurosight-dataset-distribution.png" alt="NeuroSight dataset distribution" width="750">
+</div>
 
-Classification Crops
-Class	Train	Validation	Test	Total
-Door	900	180	100	1,180
-Window	403	91	63	557
-Chair	204	49	87	340
-Table	228	40	47	315
-Cabinet	179	32	52	263
-Total	1,914	392	349	2,655
+### Classification Crops
 
-The source dataset contains:
+| Class | Train | Validation | Test | Total |
+|---|---:|---:|---:|---:|
+| 🚪 Door | 900 | 180 | 100 | 1,180 |
+| 🪟 Window | 403 | 91 | 63 | 557 |
+| 🪑 Chair | 204 | 49 | 87 | 340 |
+| 🟫 Table | 228 | 40 | 47 | 315 |
+| 🗄️ Cabinet | 179 | 32 | 52 | 263 |
+| **Total** | **1,914** | **392** | **349** | **2,655** |
 
-1,012 training images
-230 validation images
-107 test images
-1,349 source images total
+### Source Dataset Images
+
+- **1,012** training images
+- **230** validation images
+- **107** test images
+- **1,349** source images total
 
 The crop counts are larger because a single source image can contain multiple annotated objects.
 
-📳 Haptic Sensory Language
+---
 
-NeuroSight does not use the same vibration for every object.
+# 📳 Haptic + 🔊 Audio Feedback
 
-Each class has its own temporal vibration pattern.
+NeuroSight maps each prediction to a distinguishable sensory pattern.
 
-Object	Pattern
-Door	Long pulse → pause → repeat
-Window	Short pulse → pause → repeat
-Chair	Medium pulse → longer pause
-Table	Short pulse → long pause
-Cabinet	Long pulse → short pause
+| Detection | Haptic Feedback | Audio Feedback |
+|---|---|---|
+| 🚪 Door | Long pulse pattern | 400 Hz tone |
+| 🪟 Window | Short pulse pattern | 520 Hz tone |
+| 🪑 Chair | Medium pulse + longer pause | 300 Hz tone |
+| 🟫 Table | Short pulse + long pause | 650 Hz tone |
+| 🗄️ Cabinet | Long pulse + short pause | 250 Hz tone |
 
-The implementation uses Android's VibratorManager / VibrationEffect APIs.
+### Implementation
 
-The patterns can therefore become a small tactile vocabulary that users can learn over time.
+```text
+app/src/main/java/com/neurosight/app/haptics/HapticEngine.kt
+app/src/main/java/com/neurosight/app/audio/AudioEngine.kt
+```
 
-🔊 Audio Sensory Language
+The purpose is to create a simple **sensory vocabulary** that can be learned through repeated interaction.
 
-Audio is also class-specific.
+---
 
-NeuroSight generates lightweight tones locally using Android's audio stack.
+# 🧩 Sensory Substitution
 
-Object	Frequency
-Door	400 Hz
-Window	520 Hz
-Chair	300 Hz
-Table	650 Hz
-Cabinet	250 Hz
+Traditional computer-vision applications often follow:
 
-The audio engine uses:
+```text
+Camera → AI → Screen
+```
 
-AudioTrack
-PCM 16-bit mono audio
-44.1 kHz sample rate
-generated sine-wave cues
+NeuroSight explores:
 
-This allows the application to communicate object identity without relying on speech synthesis or an internet connection.
+```text
+Camera → AI → Haptics + Audio
+```
 
-🧠 Sensory Substitution
+The current prototype provides five basic object associations:
 
-The central concept behind NeuroSight is sensory substitution.
+```text
+Pattern A → Door
+Pattern B → Window
+Pattern C → Chair
+Pattern D → Table
+Pattern E → Cabinet
+```
 
-Instead of:
+The same interaction model can later be extended to more environmental classes.
 
-Visual information
-        ↓
-       Eyes
+---
 
-the system explores:
+# 🖥️ Office Kit
 
-Visual information
-        ↓
- Smartphone Camera
-        ↓
-     AI Model
-        ↓
- ┌──────┴──────┐
- ▼             ▼
-Touch         Sound
+The **phone remains the primary product**.
 
-Over time, users could potentially learn the association between:
+The Office Kit provides a laptop-side environment for development, debugging, monitoring, screen mirroring, and demonstration.
 
-object → vibration → sound
+```text
+                 OFFICE KIT
+                     │
+                     ▼
+              ┌──────────────┐
+              │    LAPTOP    │
+              │              │
+              │ Development  │
+              │ Debugging    │
+              │ Monitoring   │
+              │ Mirroring    │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │  iQOO PHONE  │
+              │              │
+              │ Camera       │
+              │ On-device AI │
+              │ Haptics      │
+              │ Audio        │
+              └──────────────┘
+```
 
-and build a compact sensory vocabulary.
+### Phone
 
-📱 Why a Smartphone?
+- Camera capture
+- Image processing
+- AI inference
+- Classification
+- Haptic feedback
+- Audio feedback
 
-A smartphone already contains almost everything required:
+### Office Kit
 
-📷 Camera
-🧠 AI-capable processor
-🔊 Speaker
-📳 Vibration motor
-🔋 Battery
-📱 Display
-⚡ Modern mobile SoC
-📡 Connectivity when required
+- Development
+- Debugging
+- Device monitoring
+- Screen mirroring
+- Demonstration
 
-NeuroSight therefore focuses on transforming an existing device into an assistive interface rather than requiring dedicated hardware.
+---
 
-💻 Office Kit / Phone–Laptop Workflow
+# 🛠️ Technology Stack
 
-NeuroSight is also designed around the hackathon's phone-first development workflow.
+| Area | Technologies |
+|---|---|
+| Android | Kotlin, Jetpack Compose, Android SDK |
+| Camera | CameraX / Image Analysis |
+| AI | MobileNetV3-Small, TensorFlow Lite |
+| Model | Full-integer UINT8 quantization |
+| Acceleration | Snapdragon / NPU acceleration where supported |
+| Feedback | VibratorManager, VibrationEffect, AudioTrack |
+| Audio | PCM 16-bit mono, generated sine-wave cues |
+| Concurrency | Kotlin Coroutines |
+| Training | Python, TensorFlow / Keras |
+| CI/CD | GitHub Actions |
 
-The smartphone remains the actual sensing and inference device while the laptop can be used during development for:
+---
 
-application development
-model training
-APK generation
-debugging
-documentation
-demonstration preparation
+# 📂 Project Structure
 
-This keeps the phone inside the actual AI loop instead of treating it only as a display.
-
-🛠️ Technology Stack
-Android
-Kotlin
-Jetpack Compose
-Android SDK
-CameraX
-Kotlin Coroutines
-Computer Vision / AI
-MobileNetV3-Small
-TensorFlow Lite
-Full-integer UINT8 quantization
-On-device inference
-Hardware acceleration where supported
-Sensory Feedback
-VibratorManager
-VibrationEffect
-AudioTrack
-PCM audio
-Generated sine-wave cues
-Development
-Python
-TensorFlow / Keras
-TensorFlow Lite Converter
-GitHub Actions
-Android Gradle Plugin
-📂 Project Structure
+```text
 NeuroSight/
 │
 ├── app/
-│   └── src/
-│       └── main/
-│           ├── java/com/neurosight/app/
-│           │   ├── MainActivity.kt
-│           │   │
-│           │   ├── audio/
-│           │   │   └── AudioEngine.kt
-│           │   │
-│           │   ├── camera/
-│           │   │   └── CameraController.kt
-│           │   │
-│           │   ├── haptics/
-│           │   │   └── HapticEngine.kt
-│           │   │
-│           │   ├── ml/
-│           │   │   └── NeuroSightClassifier.kt
-│           │   │
-│           │   └── ...
-│           │
-│           └── assets/
-│               ├── neurosight_encoder.tflite
-│               ├── neurosight_labels.txt
-│               └── PUT_MODEL_HERE.txt
-│
-├── training/
-│   └── train_neurosight.py
-│
-├── docs/
-│   └── MODEL_TRAINING.md
+│   └── src/main/
+│       ├── assets/
+│       │   ├── neurosight_encoder.tflite
+│       │   └── neurosight_labels.txt
+│       │
+│       ├── java/com/neurosight/app/
+│       │   ├── MainActivity.kt
+│       │   ├── audio/
+│       │   │   └── AudioEngine.kt
+│       │   ├── camera/
+│       │   │   └── CameraController.kt
+│       │   ├── haptics/
+│       │   │   └── HapticEngine.kt
+│       │   ├── ml/
+│       │   │   └── NeuroSightClassifier.kt
+│       │   ├── ui/
+│       │   │   └── MainScreen.kt
+│       │   └── util/
+│       │       └── ImageUtils.kt
+│       │
+│       └── AndroidManifest.xml
 │
 ├── assets/
 │   ├── neurosight-system-overview.png
@@ -384,272 +483,205 @@ NeuroSight/
 │   ├── neurosight-accuracy.png
 │   └── neurosight-dataset-distribution.png
 │
-└── .github/
-    └── workflows/
-🔧 Build & Run
-Requirements
-Android Studio
-JDK
-Android SDK
-Android phone with camera
-USB debugging enabled for device testing
-Clone
+├── docs/
+│   └── MODEL_TRAINING.md
+│
+├── training/
+│   └── train_neurosight.py
+│
+├── .github/
+│   └── workflows/
+│
+└── Gradle build files
+```
+
+---
+
+# 🚀 Build & Run
+
+### Requirements
+
+- Android Studio
+- Compatible JDK
+- Android SDK
+- Android device for physical testing
+- USB debugging enabled
+
+### Clone
+
+```bash
 git clone https://github.com/harshtakalkar037-boop/NeuroSight.git
 cd NeuroSight
-Open
+```
 
-Open the project in Android Studio.
+### Build
 
-Then:
+```bash
+./gradlew assembleDebug
+```
 
-Connect an Android device.
-Enable USB debugging.
-Build the application.
-Install the debug APK.
-Grant camera permission.
-Point the camera toward an indoor object.
-Observe the classification.
-Experience the corresponding audio + haptic feedback.
-🧪 Training
+### Run
 
-The training pipeline is available in:
+1. Connect the Android device.
+2. Enable Developer Options and USB Debugging.
+3. Open the project in Android Studio.
+4. Select the connected device.
+5. Build and run the application.
+6. Grant camera permission.
+7. Start the NeuroSight experience.
 
+---
+
+# 🧪 Training
+
+Training code and documentation are included in the repository.
+
+```text
 training/train_neurosight.py
+docs/MODEL_TRAINING.md
+```
 
-The pipeline performs:
+The development pipeline includes:
 
-Object Detection Dataset
-          ↓
-Class Consolidation
-          ↓
-Object Cropping
-          ↓
-Train / Validation / Test
-          ↓
-MobileNetV3-Small
-          ↓
-Transfer Learning
-          ↓
-Fine-Tuning
-          ↓
-TensorFlow Lite Conversion
-          ↓
-Full Integer UINT8 Model
+- Dataset preparation
+- Door-category consolidation
+- Object cropping
+- Image augmentation
+- MobileNetV3-Small transfer learning
+- Fine-tuning
+- TensorFlow Lite conversion
+- Full-integer UINT8 deployment
 
-The resulting model is placed in:
+---
 
-app/src/main/assets/neurosight_encoder.tflite
+# 🌍 Potential Impact
 
-Class labels are stored in:
+NeuroSight explores how a **device already carried by the user** can become an assistive interface.
 
-app/src/main/assets/neurosight_labels.txt
-🔒 Privacy & Offline-First Design
+### Potential applications
 
-The core recognition pipeline is designed to run directly on the smartphone.
+- ♿ Accessibility
+- 🏠 Indoor awareness
+- 🚪 Environmental awareness
+- 🧠 Sensory substitution
+- 📱 Accessible mobile computing
+- 🔬 Assistive technology research
 
-The camera frame is processed locally for inference instead of requiring a remote inference server.
+The current five-class prototype demonstrates the core interaction model and provides a foundation for richer environmental awareness.
 
-This architecture can reduce:
+---
 
-network dependency
-cloud inference latency
-recurring backend costs
-transmission of camera frames
+# 🛣️ Roadmap
 
-The project is therefore designed around:
+### 01 · Better Data
 
-Capture locally → infer locally → respond locally
+Larger datasets, more environments, different lighting conditions, distances, camera angles, and real-world smartphone images.
 
-🌍 Potential Impact
+### 02 · More Classes
 
-NeuroSight is intended as a prototype exploration of accessible computer vision.
+Stairs, obstacles, vehicles, furniture, crossings, entrances, and indoor landmarks.
 
-Potential applications include:
+### 03 · Personalization
 
-👁️ Low-Vision Assistance
+Custom haptic patterns, custom audio patterns, adaptive feedback, and user training.
 
-Providing an additional non-visual channel for identifying common indoor objects.
+### 04 · Wearables
 
-🏠 Indoor Navigation Support
+Explore haptic wristbands, multi-point vibration, and wireless audio integration.
 
-Helping users build awareness of nearby objects.
+### 05 · Real-World Evaluation
 
-♿ Accessibility Interfaces
+Larger-scale testing, accessibility collaboration, usability studies, and safety evaluation.
 
-Exploring touch and audio as alternative interfaces for computer vision systems.
+---
 
-📱 Smartphone-Based Assistive Technology
+# ⚠️ Limitations & Safety
 
-Demonstrating that modern phones can perform useful AI inference without requiring specialized external hardware.
+NeuroSight is currently a **hackathon prototype**.
 
-🧪 Current Prototype
+- Five object classes are currently supported.
+- The training dataset is development-scale.
+- Performance can vary in unseen environments.
+- Lighting, distance, and camera angle can affect predictions.
+- Similar-looking objects may be misclassified.
+- P95 latency has not yet been measured.
+- Extensive real-world accessibility testing has not yet been completed.
 
-The current NeuroSight prototype provides:
+> **NeuroSight should not currently replace white canes, guide dogs, human assistance, established mobility aids, or professional accessibility systems.**
 
-Real-time camera input
-On-device object classification
-5 object classes
-UINT8 TensorFlow Lite inference
-Audio feedback
-Haptic feedback
-Android UI
-Hardware-accelerated inference where supported
-~40–50 ms observed inference latency
-~30 FPS observed throughput
-Current classes
-Door
-Window
-Chair
-Table
-Cabinet
-🚧 Limitations
+---
 
-NeuroSight is a hackathon prototype, not a medical or safety-certified navigation system.
+# 🏆 Why NeuroSight?
 
-Current limitations include:
+| Hackathon Focus | NeuroSight |
+|---|---|
+| 📱 Phone-First | Camera, compute, haptics, and audio are integrated into the phone |
+| 🧠 On-Device AI | MobileNetV3-Small + TensorFlow Lite inference runs locally |
+| ⚡ NPU / Edge AI | Designed for Snapdragon / Hexagon NPU acceleration where supported |
+| 🔒 Offline | Core classification does not require cloud inference |
+| 📳 Creative Hardware Use | AI predictions become vibration and audio patterns |
+| 🛠️ Technical Depth | Computer vision + ML + Android + edge deployment |
+| 🖥️ Office Kit | Laptop supports development, monitoring, mirroring, and demonstration |
+| ♿ Impact | Explores accessible environmental awareness |
 
-Limited number of object categories
-Development-scale dataset
-Performance can vary with lighting and viewpoint
-Occluded objects may be difficult to classify
-Similar-looking objects can produce ambiguous predictions
-P95 latency has not yet been measured
-Accessibility testing with a large user population has not yet been performed
-Real-world deployment would require substantially broader validation
+---
 
-The system should therefore be treated as an assistive experimental interface, not a replacement for established mobility or safety tools.
+# 📌 Current Prototype
 
-🔮 Roadmap
+**Classes:** Door · Window · Chair · Table · Cabinet  
+**Architecture:** MobileNetV3-Small  
+**Model:** TensorFlow Lite  
+**Input:** 224 × 224 RGB / UINT8  
+**Output:** 1 × 5 / UINT8  
+**Model size:** ~1.22 MB  
+**Inference:** On-device  
+**Feedback:** Haptics + Audio  
+**Observed latency:** ~40–50 ms  
+**Observed throughput:** ~30 FPS  
+**Connectivity:** Core pipeline designed for offline operation  
+**Platform:** Android / iQOO smartphone  
+**AI acceleration:** Snapdragon / Hexagon NPU where supported by device and runtime
 
-Future versions could explore:
+---
 
-More Objects
+# 💭 Vision
 
-Expand beyond the initial five indoor categories.
+NeuroSight is built around one question:
 
-Spatial Awareness
+> **What if a smartphone could communicate the world without relying only on a screen?**
 
-Combine object recognition with:
+Today:
 
-object location
-distance estimation
-depth sensing
-directional audio
-spatial vibration
-Temporal Intelligence
-
-Track objects across multiple frames rather than treating every frame independently.
-
-Personalised Feedback
-
-Allow users to customise:
-
-vibration patterns
-sound frequencies
-intensity
-timing
-sensitivity
-More Efficient Edge AI
-
-Explore optimized architectures, delegates, and accelerator-specific execution for lower latency and power consumption.
-
-Accessibility Testing
-
-Conduct structured testing with visually impaired and low-vision users to validate whether the sensory vocabulary is actually learnable and useful.
-
-🏆 Why NeuroSight?
-
-NeuroSight combines several capabilities already present in a modern smartphone:
-
+```text
 Camera
-   +
-On-device AI
-   +
-Hardware acceleration
-   +
-Haptics
-   +
-Audio
-   =
-Assistive sensory interface
+  ↓
+On-Device AI
+  ↓
+Door / Window / Chair / Table / Cabinet
+  ↓
+Haptics + Audio
+```
 
-The project is not only about recognizing an object.
+Tomorrow:
 
-It explores a different question:
+```text
+Smartphone
+    ↓
+Environmental Understanding
+    ↓
+Personalized Sensory Feedback
+    ↓
+Greater Independence
+```
 
-Can a smartphone translate visual information into a language of touch and sound?
+The current prototype is small. **The vision is to turn the smartphone into a sensory bridge between people and the world around them.**
 
-That is the core idea behind NeuroSight.
+---
 
-📈 Development Results
+<div align="center">
 
-The current development prototype demonstrates:
+### ❤️ Built for iQOO Hackathon 2026 · City Battles · Chennai
 
-Area	Result
-Model architecture	MobileNetV3-Small
-Model format	TensorFlow Lite
-Quantization	Full-integer UINT8
-Output classes	5
-Best validation accuracy	99.59%
-Validation accuracy	98.63%
-Observed inference latency	~40–50 ms
-Observed median latency	~50 ms
-Observed throughput	~30 FPS
-Audio feedback	✅
-Haptic feedback	✅
-Android integration	✅
-On-device inference	✅
-Hardware-accelerated backend	✅ Verified on target device
-Cloud inference required	❌
-⚠️ Accuracy vs Confidence
+**NeuroSight · Phone-First · On-Device AI · Edge AI · Accessibility**
 
-The model's accuracy and an individual prediction's confidence score are different measurements.
-
-Accuracy
-
-Measures how often the model predicts correctly across an evaluation set.
-
-NeuroSight development results:
-
-99.59%
-98.63%
-
-Confidence
-
-Represents how strongly the model favors a particular class for an individual input.
-
-For example:
-
-Camera Frame
-     ↓
-Door       0.98
-Window     0.01
-Chair      0.00
-Table      0.00
-Cabinet    0.01
-
-Here 0.98 is a prediction confidence score.
-
-It is not the same thing as model accuracy.
-
-👥 Team
-
-NeuroSight — iQOO Hackathon 2026
-
-Built as a phone-first Edge AI and accessibility prototype.
-
-📜 Disclaimer
-
-NeuroSight is an experimental hackathon project intended to demonstrate on-device computer vision and sensory substitution.
-
-It is not a certified medical device, mobility aid, or guaranteed collision-avoidance system.
-
-Users should not rely on the prototype as their sole source of environmental awareness.
-
-❤️ Vision
-
-We believe accessibility should not always require another device.
-
-Sometimes, the technology people already carry can become something more.
-
-NeuroSight explores a future where a smartphone doesn't just show the world — it helps communicate the world through sound and touch.
+</div>
